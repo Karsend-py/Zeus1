@@ -101,7 +101,7 @@ class ExportEngine:
                     "Exit Reason": t.exit_reason.value,
                     "ADX at Entry": round(t.entry_adx, 2),
                     "RSI at Entry": round(t.entry_rsi, 2),
-                    "IV Rank at Entry": round(t.entry_iv_rank, 2),
+                    "Price Range Rank at Entry": round(t.entry_price_range_rank, 4),
                     "EMA at Entry": round(t.entry_ema, 2),
                 }
             )
@@ -118,7 +118,7 @@ class ExportEngine:
                     "Detail": r.detail,
                     "ADX": r.adx,
                     "RSI": r.rsi,
-                    "IV Rank": r.iv_rank,
+                    "Price Range Rank": r.price_range_rank,
                 }
             )
         return pd.DataFrame(rows)

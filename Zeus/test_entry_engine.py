@@ -35,7 +35,7 @@ def _params(**overrides) -> StrategyParams:
         adx_threshold=25.0,
         rsi_low=30.0,
         rsi_high=70.0,
-        iv_rank_min=30.0,
+        price_range_rank_min=0.3,
         blackout_buffer_days=2,
         credit_received=0.50,
         max_loss=2.50,
@@ -53,7 +53,7 @@ def _good_row() -> pd.Series:
             "Low": 4980.0,
             "Close": 5010.0,
             "Volume": 5000,
-            "IV_Rank": 45.0,
+            "Price_Range_Rank": 0.45,
             "EMA": 5000.0,
             "ATR": 25.0,
             "ADX": 20.0,
@@ -121,13 +121,13 @@ class TestEntryGates:
         assert isinstance(result, RejectedTrade)
         assert result.reason == RejectionReason.RSI_OUT_OF_RANGE
 
-    def test_iv_rank_too_low_rejected(self):
-        engine = TradeEntryEngine(_params(iv_rank_min=50.0), blackout_dates=set())
+    def test_price_range_rank_too_low_rejected(self):
+        engine = TradeEntryEngine(_params(price_range_rank_min=0.5), blackout_dates=set())
         row = _good_row()
-        row["IV_Rank"] = 40.0  # below 50
+        row["Price_Range_Rank"] = 0.4  # below 0.5
         result = engine.evaluate_bar(row, _good_timestamp())
         assert isinstance(result, RejectedTrade)
-        assert result.reason == RejectionReason.IV_RANK_TOO_LOW
+        assert result.reason == RejectionReason.PRICE_RANGE_RANK_TOO_LOW
 
     def test_duplicate_week_rejected(self):
         engine = TradeEntryEngine(_params(), blackout_dates=set())

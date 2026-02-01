@@ -27,7 +27,7 @@ from typing import Union
 import pandas as pd
 import pytz
 
-REQUIRED_PRICE_COLUMNS = {"Timestamp", "Open", "High", "Low", "Close", "Volume", "IV_Rank"}
+REQUIRED_PRICE_COLUMNS = {"Timestamp", "Open", "High", "Low", "Close", "Volume"}
 ET = pytz.timezone("America/New_York")
 
 
@@ -91,7 +91,7 @@ class DataLoader:
         # ------------------------------------------------------------------
         # Type coercion
         # ------------------------------------------------------------------
-        numeric_cols = ["Open", "High", "Low", "Close", "Volume", "IV_Rank"]
+        numeric_cols = ["Open", "High", "Low", "Close", "Volume"]
         for col in numeric_cols:
             df[col] = pd.to_numeric(df[col], errors="coerce")
 

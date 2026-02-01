@@ -11,7 +11,7 @@ Ordering of checks (fast-fail first, most expensive last):
     3. Blackout buffer
     4. ADX threshold
     5. RSI bounds
-    6. IV Rank minimum
+    6. Price Range Rank minimum
     7. Duplicate-week guard  (only one entry per ISO week)
 """
 
@@ -85,7 +85,7 @@ class TradeEntryEngine:
         # ------------------------------------------------------------------
         # 1. Indicator readiness
         # ------------------------------------------------------------------
-        required = ["EMA", "ATR", "ADX", "RSI", "KC_Upper", "KC_Lower", "IV_Rank"]
+        required = ["EMA", "ATR", "ADX", "RSI", "KC_Upper", "KC_Lower", "Price_Range_Rank"]
         if any(pd.isna(row.get(col)) for col in required):
             return RejectedTrade(
                 timestamp=timestamp,
@@ -115,7 +115,7 @@ class TradeEntryEngine:
                 detail=f"Date {bar_date} falls within blackout buffer",
                 adx=float(row["ADX"]),
                 rsi=float(row["RSI"]),
-                iv_rank=float(row["IV_Rank"]),
+                price_range_rank=float(row["Price_Range_Rank"]),
             )
 
         # ------------------------------------------------------------------
@@ -129,7 +129,7 @@ class TradeEntryEngine:
                 detail=f"ADX={adx_val:.2f} > threshold={p.adx_threshold}",
                 adx=adx_val,
                 rsi=float(row["RSI"]),
-                iv_rank=float(row["IV_Rank"]),
+                price_range_rank=float(row["Price_Range_Rank"]),
             )
 
         # ------------------------------------------------------------------
@@ -143,21 +143,21 @@ class TradeEntryEngine:
                 detail=f"RSI={rsi_val:.2f} outside [{p.rsi_low}, {p.rsi_high}]",
                 adx=adx_val,
                 rsi=rsi_val,
-                iv_rank=float(row["IV_Rank"]),
+                price_range_rank=float(row["Price_Range_Rank"]),
             )
 
         # ------------------------------------------------------------------
-        # 6. IV Rank minimum
+        # 6. Price Range Rank minimum
         # ------------------------------------------------------------------
-        ivr_val = float(row["IV_Rank"])
-        if ivr_val < p.iv_rank_min:
+        prr_val = float(row["Price_Range_Rank"])
+        if prr_val < p.price_range_rank_min:
             return RejectedTrade(
                 timestamp=timestamp,
-                reason=RejectionReason.IV_RANK_TOO_LOW,
-                detail=f"IV_Rank={ivr_val:.2f} < min={p.iv_rank_min}",
+                reason=RejectionReason.PRICE_RANGE_RANK_TOO_LOW,
+                detail=f"Price_Range_Rank={prr_val:.4f} < min={p.price_range_rank_min}",
                 adx=adx_val,
                 rsi=rsi_val,
-                iv_rank=ivr_val,
+                price_range_rank=prr_val,
             )
 
         # ------------------------------------------------------------------
@@ -171,7 +171,7 @@ class TradeEntryEngine:
                 detail=f"Already entered a trade in ISO week {iso_week}",
                 adx=adx_val,
                 rsi=rsi_val,
-                iv_rank=ivr_val,
+                price_range_rank=prr_val,
             )
 
         # ------------------------------------------------------------------
@@ -194,7 +194,7 @@ class TradeEntryEngine:
             exit_reason=ExitReason.EXPIRY,  # default; exit engine may override
             entry_adx=adx_val,
             entry_rsi=rsi_val,
-            entry_iv_rank=ivr_val,
+            entry_price_range_rank=prr_val,
             entry_ema=float(row["EMA"]),
         )
         return trade

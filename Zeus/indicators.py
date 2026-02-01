@@ -36,7 +36,7 @@ class TechnicalIndicators:
         Parameters
         ----------
         df : DataFrame
-            Must contain at least: Open, High, Low, Close, Volume, IV_Rank.
+            Must contain at least: Open, High, Low, Close, Volume.
         params : StrategyParams
             Drives all lookback windows and the Keltner multiplier.
 
@@ -51,6 +51,7 @@ class TechnicalIndicators:
         out = TechnicalIndicators._add_adx(out, params.adx_period)
         out = TechnicalIndicators._add_rsi(out)
         out = TechnicalIndicators._add_keltner(out, params.atr_multiplier)
+        out = TechnicalIndicators._add_price_range_rank(out)
         return out
 
     # ---------------------------------------------------------------------------
@@ -166,4 +167,28 @@ class TechnicalIndicators:
         """
         df["KC_Upper"] = (df["EMA"] + multiplier * df["ATR"]).round(0)
         df["KC_Lower"] = (df["EMA"] - multiplier * df["ATR"]).round(0)
+        return df
+
+    # ---------------------------------------------------------------------------
+    # Price Range Rank  (proxy for IV Rank, derived purely from price action)
+    # ---------------------------------------------------------------------------
+
+    @staticmethod
+    def _add_price_range_rank(df: pd.DataFrame) -> pd.DataFrame:
+        """Where does today's close sit inside its 252-bar price range?
+
+        Result is in [0, 1].  Bars where the 252-bar window is not yet full,
+        or where recent_high == recent_low (flat price), are left as NaN — the
+        entry engine's NaN guard will skip them automatically.
+        """
+        close = df["Close"]
+        recent_high = close.rolling(252).max()
+        recent_low = close.rolling(252).min()
+        price_range = recent_high - recent_low
+
+        # Guard: where the range is zero (flat price) set to NaN so we don't
+        # produce inf or 0/0.
+        price_range_safe = price_range.replace(0, np.nan)
+
+        df["Price_Range_Rank"] = (close - recent_low) / price_range_safe
         return df

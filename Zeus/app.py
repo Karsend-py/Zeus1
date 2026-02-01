@@ -121,9 +121,9 @@ rsi_high = st.sidebar.number_input(
     "RSI High Bound", min_value=0.0, max_value=100.0,
     value=defaults["filters"]["rsi_high"], step=1.0
 )
-iv_rank_min = st.sidebar.number_input(
-    "Min IV Rank", min_value=0.0, max_value=100.0,
-    value=defaults["filters"]["iv_rank_min"], step=1.0
+price_range_rank_min = st.sidebar.number_input(
+    "Min Price Range Rank", min_value=0.0, max_value=1.0,
+    value=defaults["filters"]["price_range_rank_min"], step=0.05
 )
 blackout_buffer = st.sidebar.number_input(
     "Blackout Buffer (days)", min_value=0,
@@ -189,7 +189,7 @@ try:
         adx_threshold=float(adx_threshold),
         rsi_low=float(rsi_low),
         rsi_high=float(rsi_high),
-        iv_rank_min=float(iv_rank_min),
+        price_range_rank_min=float(price_range_rank_min),
         blackout_buffer_days=int(blackout_buffer),
         credit_received=float(credit_received),
         max_loss=float(max_loss),
@@ -308,7 +308,7 @@ if not rejected_df.empty:
         column_config={
             "ADX": st.column_config.NumberColumn("ADX", format="%.2f"),
             "RSI": st.column_config.NumberColumn("RSI", format="%.2f"),
-            "IV Rank": st.column_config.NumberColumn("IV Rank", format="%.2f"),
+            "Price Range Rank": st.column_config.NumberColumn("Price Range Rank", format="%.4f"),
         },
     )
     if len(rejected_df) > 500:

@@ -14,14 +14,13 @@ from models import StrategyParams
 
 
 def _synthetic_df(n: int = 60) -> pd.DataFrame:
-    """Generate n bars of synthetic OHLCV + IV_Rank data."""
+    """Generate n bars of synthetic OHLCV data."""
     rng = np.random.default_rng(42)
     close = 5000 + np.cumsum(rng.normal(0, 10, n))
     high = close + rng.uniform(5, 20, n)
     low = close - rng.uniform(5, 20, n)
     open_ = close + rng.uniform(-10, 10, n)
     volume = rng.integers(1000, 10000, n)
-    iv_rank = rng.uniform(10, 90, n)
 
     return pd.DataFrame(
         {
@@ -30,7 +29,6 @@ def _synthetic_df(n: int = 60) -> pd.DataFrame:
             "Low": low,
             "Close": close,
             "Volume": volume,
-            "IV_Rank": iv_rank,
         }
     )
 
@@ -104,7 +102,6 @@ class TestIndicatorsEdgeCases:
                 "Low": [99.0] * 30,
                 "Close": [100.0] * 30,
                 "Volume": [1000] * 30,
-                "IV_Rank": [50.0] * 30,
             }
         )
         params = StrategyParams()

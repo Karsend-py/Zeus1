@@ -46,9 +46,9 @@ class TestStrategyParams:
         with pytest.raises(ValueError, match="rsi_low"):
             StrategyParams(rsi_low=-5.0)
 
-    def test_iv_rank_out_of_range_raises(self):
-        with pytest.raises(ValueError, match="iv_rank_min"):
-            StrategyParams(iv_rank_min=150.0)
+    def test_price_range_rank_out_of_range_raises(self):
+        with pytest.raises(ValueError, match="price_range_rank_min"):
+            StrategyParams(price_range_rank_min=1.5)
 
     def test_negative_credit_raises(self):
         with pytest.raises(ValueError, match="credit_received"):

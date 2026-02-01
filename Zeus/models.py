@@ -40,7 +40,7 @@ class RejectionReason(Enum):
     OUTSIDE_SESSION = "outside_nyse_session"
     ADX_TOO_HIGH = "adx_above_threshold"
     RSI_OUT_OF_RANGE = "rsi_outside_bounds"
-    IV_RANK_TOO_LOW = "iv_rank_below_minimum"
+    PRICE_RANGE_RANK_TOO_LOW = "price_range_rank_below_minimum"
     WITHIN_BLACKOUT_BUFFER = "within_blackout_buffer"
     INDICATORS_NOT_READY = "indicators_not_ready"   # NaN in required columns
     DUPLICATE_WEEK = "duplicate_entry_same_week"    # already entered this week
@@ -65,7 +65,7 @@ class StrategyParams:
     adx_threshold: float = 25.0
     rsi_low: float = 30.0
     rsi_high: float = 70.0
-    iv_rank_min: float = 30.0
+    price_range_rank_min: float = 0.3
     blackout_buffer_days: int = 3
 
     # Slippage / credit model
@@ -98,8 +98,8 @@ class StrategyParams:
             raise ValueError("rsi_high must be in [0, 100]")
         if self.rsi_low > self.rsi_high:
             raise ValueError("rsi_low must be <= rsi_high")
-        if not (0 <= self.iv_rank_min <= 100):
-            raise ValueError("iv_rank_min must be in [0, 100]")
+        if not (0 <= self.price_range_rank_min <= 1):
+            raise ValueError("price_range_rank_min must be in [0, 1]")
         if self.blackout_buffer_days < 0:
             raise ValueError("blackout_buffer_days must be >= 0")
         if self.credit_received < 0:
@@ -132,7 +132,7 @@ class Trade:
     # Metadata for the trades table
     entry_adx: float = 0.0
     entry_rsi: float = 0.0
-    entry_iv_rank: float = 0.0
+    entry_price_range_rank: float = 0.0
     entry_ema: float = 0.0
 
 
@@ -150,7 +150,7 @@ class RejectedTrade:
     detail: str = ""                 # Human-readable context (e.g. "ADX=28.3 > 25.0")
     adx: Optional[float] = None
     rsi: Optional[float] = None
-    iv_rank: Optional[float] = None
+    price_range_rank: Optional[float] = None
 
 
 # ---------------------------------------------------------------------------
