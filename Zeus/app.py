@@ -146,7 +146,7 @@ max_loss = st.sidebar.number_input(
 st.sidebar.markdown("---")
 st.sidebar.subheader("📁 Data Upload")
 price_file = st.sidebar.file_uploader("Price Data CSV", type=["csv"], key="price_upload")
-blackout_file = st.sidebar.file_uploader("Blackout Dates CSV", type=["csv"], key="blackout_upload")
+blackout_file = st.sidebar.file_uploader("Blackout Dates (CSV or TXT)", type=["csv", "txt"], key="blackout_upload")
 
 # --- Run button ---
 st.sidebar.markdown("---")

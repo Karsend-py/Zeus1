@@ -60,6 +60,21 @@ class DataLoader:
         df = pd.read_csv(raw if isinstance(raw, StringIO) else StringIO(raw))
 
         # ------------------------------------------------------------------
+        # Case-insensitive column normalisation
+        # Build a map from the lowercase version of each required name to its
+        # canonical Title_Case form.  Any column in the file whose lowered,
+        # stripped name matches a required column gets renamed.  Columns that
+        # are not required (e.g. "vwap", "transactions") are left untouched.
+        # ------------------------------------------------------------------
+        canonical = {name.lower(): name for name in REQUIRED_PRICE_COLUMNS}
+        rename_map = {
+            col: canonical[col.strip().lower()]
+            for col in df.columns
+            if col.strip().lower() in canonical
+        }
+        df = df.rename(columns=rename_map)
+
+        # ------------------------------------------------------------------
         # Column validation
         # ------------------------------------------------------------------
         present = {c.strip() for c in df.columns}
@@ -104,19 +119,43 @@ class DataLoader:
 
     @staticmethod
     def load_blackout_dates(raw: Union[str, StringIO]) -> pd.DataFrame:
-        """Read a blackout CSV.
+        """Read a blackout file (CSV or whitespace-delimited .txt).
 
-        Expected columns: Date, Reason
+        Expected columns: Date, Reason  (case-insensitive).
+        If the file is whitespace- or tab-delimited instead of comma-separated,
+        the loader detects this automatically and re-parses.
 
         Returns
         -------
         DataFrame with columns [Date (datetime.date), Reason (str)]
         """
-        df = pd.read_csv(raw if isinstance(raw, StringIO) else StringIO(raw))
+        text = raw if isinstance(raw, str) else raw.read()
+
+        # ------------------------------------------------------------------
+        # Parse: try CSV first; if that yields only one column, fall back to
+        # whitespace-delimited (handles .txt files with space/tab separation).
+        # ------------------------------------------------------------------
+        df = pd.read_csv(StringIO(text))
+        if len(df.columns) == 1:
+            df = pd.read_csv(StringIO(text), sep=r"\s+", engine="python")
+
+        # ------------------------------------------------------------------
+        # Case-insensitive column normalisation for Date / Reason
+        # ------------------------------------------------------------------
+        canonical_blackout = {"date": "Date", "reason": "Reason"}
+        rename_map = {
+            col: canonical_blackout[col.strip().lower()]
+            for col in df.columns
+            if col.strip().lower() in canonical_blackout
+        }
+        df = df.rename(columns=rename_map)
         df.columns = [c.strip() for c in df.columns]
 
         if "Date" not in df.columns:
-            raise ValueError("Blackout CSV must contain a 'Date' column.")
+            raise ValueError(
+                "Blackout file must contain a 'Date' column. "
+                f"Found: {sorted(df.columns)}"
+            )
 
         df["Date"] = pd.to_datetime(df["Date"], errors="coerce").dt.date
         if "Reason" not in df.columns:
