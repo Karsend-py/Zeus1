@@ -17,31 +17,24 @@ Layout
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 
 import pandas as pd
 import streamlit as st
 import yaml
 
-# ---------------------------------------------------------------------------
-# Path setup — allow imports from src/ without installing the package
-# ---------------------------------------------------------------------------
-PROJECT_ROOT = Path(__file__).resolve().parent
-sys.path.insert(0, str(PROJECT_ROOT))
-
-from src.io.blackout import BlackoutFilter  # noqa: E402
-from src.io.export import ExportEngine  # noqa: E402
-from src.io.loader import DataLoader  # noqa: E402
-from src.strategy.indicators import TechnicalIndicators  # noqa: E402
-from src.strategy.models import StrategyParams  # noqa: E402
-from src.strategy.runner import BacktestRunner  # noqa: E402
+from blackout import BlackoutFilter
+from export import ExportEngine
+from loader import DataLoader
+from indicators import TechnicalIndicators
+from models import StrategyParams
+from runner import BacktestRunner
 
 # ---------------------------------------------------------------------------
 # Default params loader
 # ---------------------------------------------------------------------------
 
-DEFAULTS_PATH = PROJECT_ROOT / "config" / "default_params.yaml"
+DEFAULTS_PATH = Path(__file__).resolve().parent / "default_params.yaml"
 
 
 def _load_defaults() -> dict:

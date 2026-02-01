@@ -15,8 +15,8 @@ import pytz
 
 import pytest
 
-from src.strategy.entry_engine import TradeEntryEngine
-from src.strategy.models import (
+from entry_engine import TradeEntryEngine
+from models import (
     RejectedTrade,
     RejectionReason,
     StrategyParams,

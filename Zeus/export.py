@@ -24,7 +24,7 @@ from typing import Any
 import pandas as pd
 import yaml
 
-from src.strategy.models import BacktestResult, StrategyParams
+from models import BacktestResult, StrategyParams
 
 
 class ExportEngine:

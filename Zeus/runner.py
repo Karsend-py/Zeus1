@@ -20,10 +20,10 @@ from __future__ import annotations
 
 import pandas as pd
 
-from src.analytics.engine import AnalyticsEngine
-from src.strategy.entry_engine import TradeEntryEngine
-from src.strategy.exit_engine import TradeExitEngine
-from src.strategy.models import (
+from engine import AnalyticsEngine
+from entry_engine import TradeEntryEngine
+from exit_engine import TradeExitEngine
+from models import (
     BacktestResult,
     RejectedTrade,
     StrategyParams,
@@ -99,7 +99,7 @@ class BacktestRunner:
         # ----------------------------------------------------------------------
         if open_trade is not None:
             from dataclasses import replace
-            from src.strategy.models import ExitReason
+            from models import ExitReason
 
             last_ts = self.df.index[-1]
             closed = replace(

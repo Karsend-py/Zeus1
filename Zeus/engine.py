@@ -15,7 +15,7 @@ Metrics computed
 
 from __future__ import annotations
 
-from src.strategy.models import BacktestResult, TradeResult
+from models import BacktestResult, TradeResult
 
 
 class AnalyticsEngine:

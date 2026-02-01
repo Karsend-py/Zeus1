@@ -9,8 +9,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from src.strategy.indicators import TechnicalIndicators
-from src.strategy.models import StrategyParams
+from indicators import TechnicalIndicators
+from models import StrategyParams
 
 
 def _synthetic_df(n: int = 60) -> pd.DataFrame:

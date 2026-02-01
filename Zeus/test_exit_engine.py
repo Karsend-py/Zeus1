@@ -14,8 +14,8 @@ import pytz
 
 import pytest
 
-from src.strategy.exit_engine import TradeExitEngine
-from src.strategy.models import (
+from exit_engine import TradeExitEngine
+from models import (
     ExitReason,
     StrategyParams,
     Trade,

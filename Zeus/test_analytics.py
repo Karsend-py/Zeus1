@@ -9,8 +9,8 @@ from datetime import datetime
 
 import pytest
 
-from src.analytics.engine import AnalyticsEngine
-from src.strategy.models import (
+from engine import AnalyticsEngine
+from models import (
     BacktestResult,
     ExitReason,
     Trade,

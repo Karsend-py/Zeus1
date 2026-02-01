@@ -9,7 +9,7 @@ from datetime import date, timedelta
 import pandas as pd
 import pytest
 
-from src.io.blackout import BlackoutFilter
+from blackout import BlackoutFilter
 
 
 def _blackout_df(dates_and_reasons: list[tuple[date, str]]) -> pd.DataFrame:

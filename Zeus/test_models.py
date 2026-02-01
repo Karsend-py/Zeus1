@@ -7,7 +7,7 @@ Unit tests for the frozen dataclass domain objects.
 import pytest
 from datetime import datetime
 
-from src.strategy.models import (
+from models import (
     StrategyParams,
     Trade,
     RejectedTrade,

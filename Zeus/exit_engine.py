@@ -28,7 +28,7 @@ from datetime import datetime
 
 import pandas as pd
 
-from src.strategy.models import (
+from models import (
     ExitReason,
     StrategyParams,
     Trade,

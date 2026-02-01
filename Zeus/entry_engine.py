@@ -22,7 +22,7 @@ from datetime import datetime, time, timedelta
 import pandas as pd
 import pytz
 
-from src.strategy.models import (
+from models import (
     RejectedTrade,
     RejectionReason,
     StrategyParams,
