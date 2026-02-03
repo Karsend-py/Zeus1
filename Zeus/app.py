@@ -280,23 +280,141 @@ col6.metric("Max Drawdown", f"-${result.max_drawdown:.2f}")
 
 st.markdown("---")
 
-# --- Equity Curve ---
+# --- Equity Curve with Trade Annotations ---
 if result.equity_curve:
+    import plotly.graph_objects as go
+    
     st.subheader("📈 Cumulative Equity Curve")
+    
+    # Build equity curve
     equity_df = pd.DataFrame(
         {
             "Date": result.timestamps,
             "Equity ($)": result.equity_curve,
         }
     )
-    st.line_chart(
-        equity_df.set_index("Date"),
-        use_container_width=True,
-        height=320,
+    
+    # Create base equity line
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=equity_df["Date"],
+        y=equity_df["Equity ($)"],
+        mode="lines",
+        name="Equity",
+        line=dict(color="#1f77b4", width=2),
+        hovertemplate="<b>%{x}</b><br>Equity: $%{y:.2f}<extra></extra>",
+    ))
+    
+    # Add trade markers (entries, wins, losses)
+    entries = []
+    wins = []
+    losses_upper = []
+    losses_lower = []
+    
+    for t in result.trades:
+        # Entry marker at entry_timestamp (use equity at that point)
+        # Find the equity value at entry by looking at the trade just before this one
+        entry_equity = 0.0
+        for i, ts in enumerate(result.timestamps):
+            if ts < t.entry_timestamp:
+                entry_equity = result.equity_curve[i]
+        
+        entries.append({
+            "date": t.entry_timestamp,
+            "equity": entry_equity,
+            "id": t.trade_id,
+        })
+        
+        # Exit marker at exit_timestamp
+        exit_equity = 0.0
+        for i, ts in enumerate(result.timestamps):
+            if ts == t.exit_timestamp:
+                exit_equity = result.equity_curve[i]
+                break
+        
+        if t.result.value == "win":
+            wins.append({
+                "date": t.exit_timestamp,
+                "equity": exit_equity,
+                "id": t.trade_id,
+                "reason": t.exit_reason.value,
+            })
+        else:
+            if "call" in t.exit_reason.value:
+                losses_upper.append({
+                    "date": t.exit_timestamp,
+                    "equity": exit_equity,
+                    "id": t.trade_id,
+                })
+            else:
+                losses_lower.append({
+                    "date": t.exit_timestamp,
+                    "equity": exit_equity,
+                    "id": t.trade_id,
+                })
+    
+    # Plot entries (blue circles)
+    if entries:
+        fig.add_trace(go.Scatter(
+            x=[e["date"] for e in entries],
+            y=[e["equity"] for e in entries],
+            mode="markers",
+            name="Entry",
+            marker=dict(color="blue", size=6, symbol="circle"),
+            hovertemplate="<b>Entry</b><br>Trade ID: %{text}<br>%{x}<extra></extra>",
+            text=[e["id"] for e in entries],
+        ))
+    
+    # Plot wins (green triangles)
+    if wins:
+        fig.add_trace(go.Scatter(
+            x=[w["date"] for w in wins],
+            y=[w["equity"] for w in wins],
+            mode="markers",
+            name="Win (Expiry)",
+            marker=dict(color="green", size=10, symbol="triangle-up"),
+            hovertemplate="<b>Win</b><br>Trade ID: %{text}<br>%{x}<extra></extra>",
+            text=[w["id"] for w in wins],
+        ))
+    
+    # Plot losses - short call breach (red X)
+    if losses_upper:
+        fig.add_trace(go.Scatter(
+            x=[l["date"] for l in losses_upper],
+            y=[l["equity"] for l in losses_upper],
+            mode="markers",
+            name="Loss (Call Breach)",
+            marker=dict(color="red", size=10, symbol="x"),
+            hovertemplate="<b>Short Call Breach</b><br>Trade ID: %{text}<br>%{x}<extra></extra>",
+            text=[l["id"] for l in losses_upper],
+        ))
+    
+    # Plot losses - short put breach (orange X)
+    if losses_lower:
+        fig.add_trace(go.Scatter(
+            x=[l["date"] for l in losses_lower],
+            y=[l["equity"] for l in losses_lower],
+            mode="markers",
+            name="Loss (Put Breach)",
+            marker=dict(color="orange", size=10, symbol="x"),
+            hovertemplate="<b>Short Put Breach</b><br>Trade ID: %{text}<br>%{x}<extra></extra>",
+            text=[l["id"] for l in losses_lower],
+        ))
+    
+    fig.update_layout(
+        xaxis_title="Date",
+        yaxis_title="Cumulative P&L ($)",
+        hovermode="x unified",
+        height=450,
+        showlegend=True,
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
     )
+    
+    st.plotly_chart(fig, use_container_width=True)
     st.markdown("---")
 else:
     st.info("No trades were executed — equity curve is empty.", icon="📉")
+
 
 # --- Trades Table ---
 st.subheader("📋 Closed Trades")
@@ -309,10 +427,15 @@ if not trades_df.empty:
         hide_index=True,
         column_config={
             "P&L": st.column_config.NumberColumn("P&L ($)", format="$%.2f"),
-            "Credit Received": st.column_config.NumberColumn("Credit ($)", format="$%.2f"),
-            "Loss Realised": st.column_config.NumberColumn("Loss ($)", format="$%.2f"),
-            "Upper Strike": st.column_config.NumberColumn("Upper Strike", format="%.0f"),
-            "Lower Strike": st.column_config.NumberColumn("Lower Strike", format="%.0f"),
+            "Credit Estimate": st.column_config.NumberColumn("Credit ($)", format="$%.2f"),
+            "Max Loss": st.column_config.NumberColumn("Max Loss ($)", format="$%.2f"),
+            "Loss Realised": st.column_config.NumberColumn("Loss Realised ($)", format="$%.2f"),
+            "Risk/Reward": st.column_config.NumberColumn("Risk/Reward", format="%.2f"),
+            "Width": st.column_config.NumberColumn("Wing Width ($)", format="%.0f"),
+            "Short Call Strike": st.column_config.NumberColumn("Short Call Strike", format="%.0f"),
+            "Long Call Strike": st.column_config.NumberColumn("Long Call Strike", format="%.0f"),
+            "Short Put Strike": st.column_config.NumberColumn("Short Put Strike", format="%.0f"),
+            "Long Put Strike": st.column_config.NumberColumn("Long Put Strike", format="%.0f"),
         },
     )
 else:

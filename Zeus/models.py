@@ -29,9 +29,9 @@ class TradeResult(Enum):
 class ExitReason(Enum):
     """Why the trade was closed."""
 
-    UPPER_BREACH = "upper_strike_breached"
-    LOWER_BREACH = "lower_strike_breached"
-    EXPIRY = "expiry"    # Reached Friday expiry without breach
+    BREACH_SHORT_CALL = "breach_short_call"      # Price exceeded upper strike
+    BREACH_SHORT_PUT = "breach_short_put"        # Price fell below lower strike
+    EXPIRY_WORTHLESS = "expiry_worthless"        # Reached Friday expiry, expired worthless
 
 
 class RejectionReason(Enum):

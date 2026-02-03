@@ -115,7 +115,7 @@ class BacktestRunner:
             closed = replace(
                 open_trade,
                 result=TradeResult.WIN,
-                exit_reason=ExitReason.EXPIRY,
+                exit_reason=ExitReason.EXPIRY_WORTHLESS,
                 exit_timestamp=last_ts,
                 loss_realised=0.0,
                 pnl=open_trade.credit_received,

@@ -66,19 +66,19 @@ class TradeExitEngine:
         # Upper strike breach  (short call side)
         # ------------------------------------------------------------------
         if high > trade.upper_strike:
-            return self._close(trade, timestamp, ExitReason.UPPER_BREACH)
+            return self._close(trade, timestamp, ExitReason.BREACH_SHORT_CALL)
 
         # ------------------------------------------------------------------
         # Lower strike breach  (short put side)
         # ------------------------------------------------------------------
         if low < trade.lower_strike:
-            return self._close(trade, timestamp, ExitReason.LOWER_BREACH)
+            return self._close(trade, timestamp, ExitReason.BREACH_SHORT_PUT)
 
         # ------------------------------------------------------------------
         # Expiry check  (bar date >= expiry date)
         # ------------------------------------------------------------------
         if timestamp.date() >= trade.expiry_date.date():
-            return self._close(trade, timestamp, ExitReason.EXPIRY)
+            return self._close(trade, timestamp, ExitReason.EXPIRY_WORTHLESS)
 
         # No exit this bar
         return None
@@ -94,7 +94,7 @@ class TradeExitEngine:
         reason: ExitReason,
     ) -> Trade:
         """Create a closed copy of *trade* with P&L resolved."""
-        is_loss = reason in (ExitReason.UPPER_BREACH, ExitReason.LOWER_BREACH)
+        is_loss = reason in (ExitReason.BREACH_SHORT_CALL, ExitReason.BREACH_SHORT_PUT)
 
         loss_realised = self.params.max_loss if is_loss else 0.0
         pnl = trade.credit_received - loss_realised

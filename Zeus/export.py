@@ -86,19 +86,45 @@ class ExportEngine:
     def _trades_df(result: BacktestResult) -> pd.DataFrame:
         rows = []
         for t in result.trades:
+            # Iron condor strike terminology
+            short_call_strike = t.upper_strike
+            short_put_strike = t.lower_strike
+            long_call_strike = short_call_strike + 5  # Fixed $5 wing
+            long_put_strike = short_put_strike - 5    # Fixed $5 wing
+            
+            # Realism columns
+            width = 5.0  # Wing width (fixed at $5)
+            credit_estimate = t.credit_received  # Already computed by entry logic
+            max_loss = t.loss_realised if t.result.value == "loss" else t.credit_received + width
+            risk_reward = max_loss / credit_estimate if credit_estimate > 0 else 0.0
+            
+            # Breach side
+            if "call" in t.exit_reason.value:
+                breach_side = "short_call"
+            elif "put" in t.exit_reason.value:
+                breach_side = "short_put"
+            else:
+                breach_side = "none"
+            
             rows.append(
                 {
                     "Trade ID": t.trade_id,
                     "Entry Timestamp": t.entry_timestamp,
                     "Exit Timestamp": t.exit_timestamp,
                     "Expiry Date": t.expiry_date,
-                    "Upper Strike": t.upper_strike,
-                    "Lower Strike": t.lower_strike,
-                    "Credit Received": t.credit_received,
+                    "Short Call Strike": short_call_strike,
+                    "Long Call Strike": long_call_strike,
+                    "Short Put Strike": short_put_strike,
+                    "Long Put Strike": long_put_strike,
+                    "Width": width,
+                    "Credit Estimate": credit_estimate,
+                    "Max Loss": max_loss,
+                    "Risk/Reward": round(risk_reward, 2),
                     "Loss Realised": t.loss_realised,
                     "P&L": t.pnl,
                     "Result": t.result.value,
                     "Exit Reason": t.exit_reason.value,
+                    "Breach Side": breach_side,
                     "ADX at Entry": round(t.entry_adx, 2),
                     "RSI at Entry": round(t.entry_rsi, 2),
                     "Price Range Rank at Entry": round(t.entry_price_range_rank, 4),

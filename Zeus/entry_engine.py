@@ -191,7 +191,7 @@ class TradeEntryEngine:
             lower_strike=lower_strike,
             credit_received=p.credit_received,
             result=TradeResult.OPEN,       # will be updated by exit engine
-            exit_reason=ExitReason.EXPIRY,  # default; exit engine may override
+            exit_reason=ExitReason.EXPIRY_WORTHLESS,  # default; exit engine may override
             entry_adx=adx_val,
             entry_rsi=rsi_val,
             entry_price_range_rank=prr_val,
