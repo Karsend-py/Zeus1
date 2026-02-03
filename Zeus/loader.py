@@ -152,6 +152,15 @@ class DataLoader:
         df.columns = [c.strip() for c in df.columns]
 
         if "Date" not in df.columns:
+            # Check if the first column looks like a date — this means the file
+            # is missing a header row and the first date was parsed as the column name
+            first_col = df.columns[0] if len(df.columns) > 0 else ""
+            if any(sep in first_col for sep in ["-", "/"]):
+                raise ValueError(
+                    "Blackout file is missing a header row. "
+                    f"The first line '{first_col}' looks like a date, not a column name. "
+                    "Add 'Date' as the first line, or 'Date,Reason' if you have reasons."
+                )
             raise ValueError(
                 "Blackout file must contain a 'Date' column. "
                 f"Found: {sorted(df.columns)}"
@@ -170,14 +179,19 @@ class DataLoader:
 
     @staticmethod
     def _normalise_tz(df: pd.DataFrame) -> pd.DataFrame:
-        """Push all Timestamp values into America/New_York."""
+        """Convert all timestamps to America/New_York.
+        
+        If timestamps are naive (no timezone), assume they are already in ET and localize.
+        If timestamps are tz-aware (e.g., UTC from market data APIs), convert to ET.
+        This ensures all trading logic (session timing, Friday expiry) operates in ET.
+        """
         ts = df["Timestamp"]
 
         if ts.dt.tz is None:
             # Naive → assume ET, localise
             df["Timestamp"] = ts.dt.tz_localize(ET, ambiguous="infer", nonexistent="shift_forward")
         else:
-            # Already tz-aware → convert to ET
+            # Already tz-aware (e.g., UTC) → convert to ET
             df["Timestamp"] = ts.dt.tz_convert(ET)
 
         return df

@@ -63,16 +63,35 @@ class TradeExitEngine:
         low = float(row["Low"])
 
         # ------------------------------------------------------------------
-        # Upper strike breach  (short call side)
+        # Structure-aware breach detection
         # ------------------------------------------------------------------
-        if high > trade.upper_strike:
-            return self._close(trade, timestamp, ExitReason.BREACH_SHORT_CALL)
-
-        # ------------------------------------------------------------------
-        # Lower strike breach  (short put side)
-        # ------------------------------------------------------------------
-        if low < trade.lower_strike:
-            return self._close(trade, timestamp, ExitReason.BREACH_SHORT_PUT)
+        # Iron condor: check both sides
+        # Call spread: only check upper strike
+        # Put spread: only check lower strike
+        
+        if trade.structure == "iron_condor":
+            # Check both sides
+            if high > trade.upper_strike:
+                return self._close(trade, timestamp, ExitReason.BREACH_SHORT_CALL)
+            if low < trade.lower_strike:
+                return self._close(trade, timestamp, ExitReason.BREACH_SHORT_PUT)
+        
+        elif trade.structure == "call_credit_spread":
+            # Only check upper strike
+            if high > trade.upper_strike:
+                return self._close(trade, timestamp, ExitReason.BREACH_SHORT_CALL)
+        
+        elif trade.structure == "put_credit_spread":
+            # Only check lower strike
+            if low < trade.lower_strike:
+                return self._close(trade, timestamp, ExitReason.BREACH_SHORT_PUT)
+        
+        else:
+            # Fallback: treat as iron condor (backward compatibility)
+            if high > trade.upper_strike:
+                return self._close(trade, timestamp, ExitReason.BREACH_SHORT_CALL)
+            if low < trade.lower_strike:
+                return self._close(trade, timestamp, ExitReason.BREACH_SHORT_PUT)
 
         # ------------------------------------------------------------------
         # Expiry check  (bar date >= expiry date)

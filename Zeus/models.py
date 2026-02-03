@@ -26,6 +26,14 @@ class TradeResult(Enum):
     OPEN = "open"        # Still live (should not appear in final results)
 
 
+class TradeStructure(Enum):
+    """Type of spread structure traded."""
+
+    IRON_CONDOR = "iron_condor"      # Both call and put spreads (ADX ≤ 20)
+    CALL_CREDIT_SPREAD = "call_credit_spread"  # Call spread only (ADX > 20, RSI < 50)
+    PUT_CREDIT_SPREAD = "put_credit_spread"    # Put spread only (ADX > 20, RSI ≥ 50)
+
+
 class ExitReason(Enum):
     """Why the trade was closed."""
 
@@ -134,6 +142,9 @@ class Trade:
     entry_rsi: float = 0.0
     entry_price_range_rank: float = 0.0
     entry_ema: float = 0.0
+    structure: Optional[str] = None  # "iron_condor", "call_credit_spread", "put_credit_spread"
+    prr_upside: float = 0.0          # PRR for call side (UpperStrike - Close)
+    prr_downside: float = 0.0        # PRR for put side (Close - LowerStrike)
 
 
 # ---------------------------------------------------------------------------

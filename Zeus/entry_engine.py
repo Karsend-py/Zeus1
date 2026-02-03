@@ -85,7 +85,7 @@ class TradeEntryEngine:
         # ------------------------------------------------------------------
         # 1. Indicator readiness
         # ------------------------------------------------------------------
-        required = ["EMA", "ATR", "ADX", "RSI", "KC_Upper", "KC_Lower", "Price_Range_Rank"]
+        required = ["EMA", "ATR", "ADX", "RSI", "KC_Upper", "KC_Lower", "Price_Range_Rank", "PRR_upside", "PRR_downside"]
         if any(pd.isna(row.get(col)) for col in required):
             return RejectedTrade(
                 timestamp=timestamp,
@@ -147,18 +147,50 @@ class TradeEntryEngine:
             )
 
         # ------------------------------------------------------------------
-        # 6. Price Range Rank minimum
+        # 6. Regime Router: Determine trade structure based on ADX/RSI
         # ------------------------------------------------------------------
-        prr_val = float(row["Price_Range_Rank"])
-        if prr_val < p.price_range_rank_min:
-            return RejectedTrade(
-                timestamp=timestamp,
-                reason=RejectionReason.PRICE_RANGE_RANK_TOO_LOW,
-                detail=f"Price_Range_Rank={prr_val:.4f} < min={p.price_range_rank_min}",
-                adx=adx_val,
-                rsi=rsi_val,
-                price_range_rank=prr_val,
-            )
+        # Read side-specific PRR values
+        prr_upside = float(row["PRR_upside"])
+        prr_downside = float(row["PRR_downside"])
+        prr_val = float(row["Price_Range_Rank"])  # Keep for logging
+        
+        # Regime selection
+        if adx_val <= 20.0:
+            structure = "iron_condor"
+            # Iron condor requires BOTH sides above threshold
+            if prr_upside < p.price_range_rank_min or prr_downside < p.price_range_rank_min:
+                return RejectedTrade(
+                    timestamp=timestamp,
+                    reason=RejectionReason.PRICE_RANGE_RANK_TOO_LOW,
+                    detail=f"Iron condor: PRR_upside={prr_upside:.4f}, PRR_downside={prr_downside:.4f}, min={p.price_range_rank_min}",
+                    adx=adx_val,
+                    rsi=rsi_val,
+                    price_range_rank=prr_val,
+                )
+        elif rsi_val >= 50.0:
+            structure = "put_credit_spread"
+            # Put spread requires only downside PRR above threshold
+            if prr_downside < p.price_range_rank_min:
+                return RejectedTrade(
+                    timestamp=timestamp,
+                    reason=RejectionReason.PRICE_RANGE_RANK_TOO_LOW,
+                    detail=f"Put spread: PRR_downside={prr_downside:.4f} < min={p.price_range_rank_min}",
+                    adx=adx_val,
+                    rsi=rsi_val,
+                    price_range_rank=prr_val,
+                )
+        else:  # adx_val > 20.0 and rsi_val < 50.0
+            structure = "call_credit_spread"
+            # Call spread requires only upside PRR above threshold
+            if prr_upside < p.price_range_rank_min:
+                return RejectedTrade(
+                    timestamp=timestamp,
+                    reason=RejectionReason.PRICE_RANGE_RANK_TOO_LOW,
+                    detail=f"Call spread: PRR_upside={prr_upside:.4f} < min={p.price_range_rank_min}",
+                    adx=adx_val,
+                    rsi=rsi_val,
+                    price_range_rank=prr_val,
+                )
 
         # ------------------------------------------------------------------
         # 7. Duplicate week guard
@@ -175,7 +207,7 @@ class TradeEntryEngine:
             )
 
         # ------------------------------------------------------------------
-        # All gates passed → emit a Trade
+        # All gates passed → emit a Trade with selected structure
         # ------------------------------------------------------------------
         self._trade_counter += 1
         self._entered_weeks.add(iso_week)
@@ -196,5 +228,8 @@ class TradeEntryEngine:
             entry_rsi=rsi_val,
             entry_price_range_rank=prr_val,
             entry_ema=float(row["EMA"]),
+            structure=structure,
+            prr_upside=prr_upside,
+            prr_downside=prr_downside,
         )
         return trade

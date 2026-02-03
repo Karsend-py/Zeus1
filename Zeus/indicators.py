@@ -52,6 +52,7 @@ class TechnicalIndicators:
         out = TechnicalIndicators._add_rsi(out)
         out = TechnicalIndicators._add_keltner(out, params.atr_multiplier)
         out = TechnicalIndicators._add_price_range_rank(out)
+        out = TechnicalIndicators._add_side_specific_prr(out)
         return out
 
     # ---------------------------------------------------------------------------
@@ -191,4 +192,44 @@ class TechnicalIndicators:
         price_range_safe = price_range.replace(0, np.nan)
 
         df["Price_Range_Rank"] = (close - recent_low) / price_range_safe
+        return df
+
+    # ---------------------------------------------------------------------------
+    # Side-Specific PRR  (for directional credit spreads)
+    # ---------------------------------------------------------------------------
+
+    @staticmethod
+    def _add_side_specific_prr(df: pd.DataFrame) -> pd.DataFrame:
+        """Calculate PRR for each side using the Keltner strikes.
+
+        PRR_upside: where does Close sit relative to the range [Close, KC_Upper]?
+        PRR_downside: where does Close sit relative to the range [KC_Lower, Close]?
+
+        These enable directional spread selection:
+        - Call credit spread needs PRR_upside > threshold (room to the upside)
+        - Put credit spread needs PRR_downside > threshold (room to the downside)
+        - Iron condor needs both
+
+        Uses a 252-bar rolling window on the distance metrics.
+        """
+        close = df["Close"]
+        upper_strike = df["KC_Upper"]
+        lower_strike = df["KC_Lower"]
+
+        # Upside: how much room from Close to Upper?
+        upside_distance = upper_strike - close
+        upside_high = upside_distance.rolling(252).max()
+        upside_low = upside_distance.rolling(252).min()
+        upside_range = upside_high - upside_low
+        upside_range_safe = upside_range.replace(0, np.nan)
+        df["PRR_upside"] = (upside_distance - upside_low) / upside_range_safe
+
+        # Downside: how much room from Lower to Close?
+        downside_distance = close - lower_strike
+        downside_high = downside_distance.rolling(252).max()
+        downside_low = downside_distance.rolling(252).min()
+        downside_range = downside_high - downside_low
+        downside_range_safe = downside_range.replace(0, np.nan)
+        df["PRR_downside"] = (downside_distance - downside_low) / downside_range_safe
+
         return df

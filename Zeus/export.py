@@ -109,6 +109,7 @@ class ExportEngine:
             rows.append(
                 {
                     "Trade ID": t.trade_id,
+                    "Structure": t.structure if t.structure else "iron_condor",  # Default for old trades
                     "Entry Timestamp": t.entry_timestamp,
                     "Exit Timestamp": t.exit_timestamp,
                     "Expiry Date": t.expiry_date,
@@ -128,6 +129,8 @@ class ExportEngine:
                     "ADX at Entry": round(t.entry_adx, 2),
                     "RSI at Entry": round(t.entry_rsi, 2),
                     "Price Range Rank at Entry": round(t.entry_price_range_rank, 4),
+                    "PRR Upside": round(t.prr_upside, 4),
+                    "PRR Downside": round(t.prr_downside, 4),
                     "EMA at Entry": round(t.entry_ema, 2),
                 }
             )
