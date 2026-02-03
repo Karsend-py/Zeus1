@@ -66,7 +66,17 @@ class BacktestRunner:
         rejected: list[RejectedTrade] = []
         open_trade: Trade | None = None
 
-        for timestamp, row in self.df.iterrows():
+        # Skip warmup period: Price_Range_Rank needs 252 bars for the rolling window
+        warmup_bars = 252
+        if len(self.df) <= warmup_bars:
+            # Not enough data to backtest
+            return BacktestResult(trades=[], rejected_trades=[])
+
+        for idx, (timestamp, row) in enumerate(self.df.iterrows()):
+            # Skip the warmup period where Price_Range_Rank is NaN by design
+            if idx < warmup_bars:
+                continue
+
             # ------------------------------------------------------------------
             # If a trade is open, check for exit *first*
             # ------------------------------------------------------------------

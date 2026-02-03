@@ -230,6 +230,31 @@ for w in blackout_warnings:
 with st.spinner("Computing technical indicators…"):
     df = TechnicalIndicators.compute_all(df, params)
 
+# --- DIAGNOSTICS: what did compute_all produce? ---
+st.write("### 🔍 Indicator Diagnostic")
+st.write(f"**Columns:** {list(df.columns)}")
+st.write(f"**Shape:** {df.shape}")
+indicator_cols = ["EMA", "ATR", "ADX", "RSI", "KC_Upper", "KC_Lower", "Price_Range_Rank"]
+st.write("**NaN counts:**")
+for col in indicator_cols:
+    if col in df.columns:
+        nan_count = df[col].isna().sum()
+        st.write(f"  - {col}: {nan_count} NaN / {len(df)} total")
+    else:
+        st.write(f"  - {col}: **MISSING COLUMN**")
+st.write("**OHLC dtypes:**")
+for col in ["Open", "High", "Low", "Close", "Volume"]:
+    if col in df.columns:
+        st.write(f"  - {col}: {df[col].dtype}")
+    else:
+        st.write(f"  - {col}: **MISSING COLUMN**")
+st.write("**Sample row (after warmup):**")
+if len(df) > 260:
+    st.write(df.iloc[260][["Open", "High", "Low", "Close"] + indicator_cols])
+else:
+    st.write("Not enough rows for warmup sample")
+st.write("---")
+
 # --- Run backtest ---
 with st.spinner("Running backtest…"):
     runner = BacktestRunner(df, params, blackout_dates)
