@@ -31,16 +31,19 @@ class BlackoutFilter:
     @staticmethod
     def expand(
         blackout_df: pd.DataFrame,
-        buffer_days: int,
+        days_before: int,
+        days_after: int,
     ) -> tuple[set[date], list[str]]:
-        """Expand raw blackout dates into a blocked set.
+        """Expand raw blackout dates into a blocked set with asymmetric buffers.
 
         Parameters
         ----------
         blackout_df : DataFrame
             Must have columns [Date (date), Reason (str)].
-        buffer_days : int
-            Number of calendar days to block before *and* after each event.
+        days_before : int
+            Number of calendar days to block BEFORE each event.
+        days_after : int
+            Number of calendar days to block AFTER each event.
 
         Returns
         -------
@@ -52,13 +55,13 @@ class BlackoutFilter:
         if blackout_df.empty:
             return set(), []
 
-        # Build per-event ranges
+        # Build per-event ranges with asymmetric buffers
         ranges: list[tuple[date, date, str]] = []
         for _, row in blackout_df.iterrows():
             event_date: date = row["Date"]
             reason: str = str(row["Reason"])
-            start = event_date - timedelta(days=buffer_days)
-            end = event_date + timedelta(days=buffer_days)
+            start = event_date - timedelta(days=days_before)
+            end = event_date + timedelta(days=days_after)
             ranges.append((start, end, reason))
 
         # Detect overlaps (O(n²) — fine for <100 events)

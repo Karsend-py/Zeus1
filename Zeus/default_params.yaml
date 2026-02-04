@@ -11,15 +11,18 @@ indicators:
   adx_period: 14          # ADX lookback
 
 filters:
-  adx_threshold: 25.0     # Maximum ADX to allow entry (low-vol regime)
-  rsi_low: 30.0           # RSI floor — must be >= this value
-  rsi_high: 70.0          # RSI ceiling — must be <= this value
-  price_range_rank_min: 0.3  # Minimum Price Range Rank (0–1) to allow entry
-  blackout_buffer_days: 3 # Calendar days before/after blackout to block
+  adx_threshold: 25.0          # Maximum ADX for mean-reversion regime (ADX ≤ 20 → condor)
+  rsi_low: 30.0                # RSI floor — must be >= this value
+  rsi_high: 70.0               # RSI ceiling — must be <= this value
+  min_prr_condor: 0.55         # Iron condor PRR gate: BOTH sides must pass (0–1)
+  min_prr_spread: 0.70         # Directional spread PRR gate: relevant side must pass (stricter, 0–1)
+  days_before_earnings: 2      # Days before earnings to block trades
+  days_after_earnings: 1       # Days after earnings to block trades
 
 slippage:
-  credit_received: 0.50   # Fixed premium credit per contract ($)
-  max_loss: 2.50          # Fixed max loss on breach per contract ($)
+  credit_condor: 0.65          # Premium collected on iron condor (two sides sold, $)
+  credit_spread: 0.50          # Premium collected on single credit spread ($)
+  wing_width: 5.0              # Fixed wing width ($) — max_loss = wing_width - credit
 
 session:
   open_hour: 9

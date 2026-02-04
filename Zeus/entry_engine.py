@@ -147,50 +147,55 @@ class TradeEntryEngine:
             )
 
         # ------------------------------------------------------------------
-        # 6. Regime Router: Determine trade structure based on ADX/RSI
+        # 6. Regime Router + Structure-Specific PRR Gates
         # ------------------------------------------------------------------
         # Read side-specific PRR values
         prr_upside = float(row["PRR_upside"])
         prr_downside = float(row["PRR_downside"])
         prr_val = float(row["Price_Range_Rank"])  # Keep for logging
         
-        # Regime selection
+        # Regime selection based on ADX/RSI
         if adx_val <= 20.0:
             structure = "iron_condor"
-            # Iron condor requires BOTH sides above threshold
-            if prr_upside < p.price_range_rank_min or prr_downside < p.price_range_rank_min:
-                return RejectedTrade(
-                    timestamp=timestamp,
-                    reason=RejectionReason.PRICE_RANGE_RANK_TOO_LOW,
-                    detail=f"Iron condor: PRR_upside={prr_upside:.4f}, PRR_downside={prr_downside:.4f}, min={p.price_range_rank_min}",
-                    adx=adx_val,
-                    rsi=rsi_val,
-                    price_range_rank=prr_val,
-                )
+            threshold_used = p.min_prr_condor
+            # Iron condor: BOTH sides must exceed min_prr_condor
+            prr_check_passed = (prr_upside >= threshold_used and prr_downside >= threshold_used)
+            rejection_detail = (
+                f"IC regime: ADX={adx_val:.2f}≤20, threshold={threshold_used:.2f}, "
+                f"PRR_up={prr_upside:.4f}, PRR_down={prr_downside:.4f} → "
+                f"{'PASS' if prr_check_passed else 'FAIL (both must pass)'}"
+            )
         elif rsi_val >= 50.0:
             structure = "put_credit_spread"
-            # Put spread requires only downside PRR above threshold
-            if prr_downside < p.price_range_rank_min:
-                return RejectedTrade(
-                    timestamp=timestamp,
-                    reason=RejectionReason.PRICE_RANGE_RANK_TOO_LOW,
-                    detail=f"Put spread: PRR_downside={prr_downside:.4f} < min={p.price_range_rank_min}",
-                    adx=adx_val,
-                    rsi=rsi_val,
-                    price_range_rank=prr_val,
-                )
+            threshold_used = p.min_prr_spread
+            # Put spread: only downside PRR must exceed min_prr_spread (stricter)
+            prr_check_passed = (prr_downside >= threshold_used)
+            rejection_detail = (
+                f"PUT regime: ADX={adx_val:.2f}>20, RSI={rsi_val:.2f}≥50, threshold={threshold_used:.2f}, "
+                f"PRR_down={prr_downside:.4f} → "
+                f"{'PASS' if prr_check_passed else 'FAIL'}"
+            )
         else:  # adx_val > 20.0 and rsi_val < 50.0
             structure = "call_credit_spread"
-            # Call spread requires only upside PRR above threshold
-            if prr_upside < p.price_range_rank_min:
-                return RejectedTrade(
-                    timestamp=timestamp,
-                    reason=RejectionReason.PRICE_RANGE_RANK_TOO_LOW,
-                    detail=f"Call spread: PRR_upside={prr_upside:.4f} < min={p.price_range_rank_min}",
-                    adx=adx_val,
-                    rsi=rsi_val,
-                    price_range_rank=prr_val,
-                )
+            threshold_used = p.min_prr_spread
+            # Call spread: only upside PRR must exceed min_prr_spread (stricter)
+            prr_check_passed = (prr_upside >= threshold_used)
+            rejection_detail = (
+                f"CALL regime: ADX={adx_val:.2f}>20, RSI={rsi_val:.2f}<50, threshold={threshold_used:.2f}, "
+                f"PRR_up={prr_upside:.4f} → "
+                f"{'PASS' if prr_check_passed else 'FAIL'}"
+            )
+        
+        # Strict NO TRADE if chosen structure fails its PRR gate
+        if not prr_check_passed:
+            return RejectedTrade(
+                timestamp=timestamp,
+                reason=RejectionReason.PRICE_RANGE_RANK_TOO_LOW,
+                detail=rejection_detail,
+                adx=adx_val,
+                rsi=rsi_val,
+                price_range_rank=prr_val,
+            )
 
         # ------------------------------------------------------------------
         # 7. Duplicate week guard
@@ -214,6 +219,9 @@ class TradeEntryEngine:
 
         upper_strike = float(row["KC_Upper"])
         lower_strike = float(row["KC_Lower"])
+        
+        # Structure-specific credit
+        credit = p.credit_condor if structure == "iron_condor" else p.credit_spread
 
         trade = Trade(
             trade_id=self._trade_counter,
@@ -221,7 +229,7 @@ class TradeEntryEngine:
             expiry_date=_next_friday(timestamp),
             upper_strike=upper_strike,
             lower_strike=lower_strike,
-            credit_received=p.credit_received,
+            credit_received=credit,
             result=TradeResult.OPEN,       # will be updated by exit engine
             exit_reason=ExitReason.EXPIRY_WORTHLESS,  # default; exit engine may override
             entry_adx=adx_val,

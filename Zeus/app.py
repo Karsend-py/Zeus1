@@ -121,25 +121,42 @@ rsi_high = st.sidebar.number_input(
     "RSI High Bound", min_value=0.0, max_value=100.0,
     value=defaults["filters"]["rsi_high"], step=1.0
 )
-price_range_rank_min = st.sidebar.number_input(
-    "Min Price Range Rank", min_value=0.0, max_value=1.0,
-    value=defaults["filters"]["price_range_rank_min"], step=0.05
+min_prr_condor = st.sidebar.number_input(
+    "Min PRR (Condor)", min_value=0.0, max_value=1.0,
+    value=defaults["filters"]["min_prr_condor"], step=0.05,
+    help="Iron condor: BOTH PRR_upside AND PRR_downside must exceed this"
 )
-blackout_buffer = st.sidebar.number_input(
-    "Blackout Buffer (days)", min_value=0,
-    value=defaults["filters"]["blackout_buffer_days"], step=1
+min_prr_spread = st.sidebar.number_input(
+    "Min PRR (Spread)", min_value=0.0, max_value=1.0,
+    value=defaults["filters"]["min_prr_spread"], step=0.05,
+    help="Directional spread: only relevant side must exceed this (typically higher)"
+)
+days_before_earnings = st.sidebar.number_input(
+    "Days Before Earnings", min_value=0,
+    value=defaults["filters"]["days_before_earnings"], step=1
+)
+days_after_earnings = st.sidebar.number_input(
+    "Days After Earnings", min_value=0,
+    value=defaults["filters"]["days_after_earnings"], step=1
 )
 
 # --- Slippage / Credit Model ---
 st.sidebar.markdown("---")
 st.sidebar.subheader("💰 Slippage Model")
-credit_received = st.sidebar.number_input(
-    "Credit Received ($)", min_value=0.0,
-    value=defaults["slippage"]["credit_received"], step=0.05
+credit_condor = st.sidebar.number_input(
+    "Credit (Condor) ($)", min_value=0.0,
+    value=defaults["slippage"]["credit_condor"], step=0.05,
+    help="Premium collected on iron condor (two sides sold)"
 )
-max_loss = st.sidebar.number_input(
-    "Max Loss on Breach ($)", min_value=0.0,
-    value=defaults["slippage"]["max_loss"], step=0.05
+credit_spread = st.sidebar.number_input(
+    "Credit (Spread) ($)", min_value=0.0,
+    value=defaults["slippage"]["credit_spread"], step=0.05,
+    help="Premium collected on single credit spread"
+)
+wing_width = st.sidebar.number_input(
+    "Wing Width ($)", min_value=1.0,
+    value=defaults["slippage"]["wing_width"], step=1.0,
+    help="Fixed wing width — max_loss = wing_width - credit"
 )
 
 # --- File Uploads ---
@@ -189,10 +206,13 @@ try:
         adx_threshold=float(adx_threshold),
         rsi_low=float(rsi_low),
         rsi_high=float(rsi_high),
-        price_range_rank_min=float(price_range_rank_min),
-        blackout_buffer_days=int(blackout_buffer),
-        credit_received=float(credit_received),
-        max_loss=float(max_loss),
+        min_prr_condor=float(min_prr_condor),
+        min_prr_spread=float(min_prr_spread),
+        days_before_earnings=int(days_before_earnings),
+        days_after_earnings=int(days_after_earnings),
+        credit_condor=float(credit_condor),
+        credit_spread=float(credit_spread),
+        wing_width=float(wing_width),
     )
 except ValueError as exc:
     st.error(f"❌ Parameter validation failed: {exc}", icon="🚨")
@@ -217,7 +237,7 @@ if blackout_file is not None:
             blackout_csv_text = blackout_file.getvalue().decode("utf-8")
             blackout_df = DataLoader.load_blackout_dates(blackout_csv_text)
             blackout_dates, blackout_warnings = BlackoutFilter.expand(
-                blackout_df, params.blackout_buffer_days
+                blackout_df, params.days_before_earnings, params.days_after_earnings
             )
         except ValueError as exc:
             st.warning(f"⚠️ Blackout file issue: {exc}. Continuing without blackouts.")

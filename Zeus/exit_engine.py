@@ -112,10 +112,16 @@ class TradeExitEngine:
         exit_ts: datetime,
         reason: ExitReason,
     ) -> Trade:
-        """Create a closed copy of *trade* with P&L resolved."""
+        """Create a closed copy of *trade* with P&L resolved.
+        
+        Max loss calculation: wing_width - credit_received
+        This assumes the full wing width is lost on breach (no management).
+        """
         is_loss = reason in (ExitReason.BREACH_SHORT_CALL, ExitReason.BREACH_SHORT_PUT)
 
-        loss_realised = self.params.max_loss if is_loss else 0.0
+        # Realistic max loss: if price breaches, lose the full wing minus the credit collected
+        # e.g., $5 wing - $0.65 credit = $4.35 max loss
+        loss_realised = (self.params.wing_width - trade.credit_received) if is_loss else 0.0
         pnl = trade.credit_received - loss_realised
 
         return replace(

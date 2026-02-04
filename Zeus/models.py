@@ -73,12 +73,15 @@ class StrategyParams:
     adx_threshold: float = 25.0
     rsi_low: float = 30.0
     rsi_high: float = 70.0
-    price_range_rank_min: float = 0.3
-    blackout_buffer_days: int = 3
+    min_prr_condor: float = 0.55     # Iron condor: BOTH PRR_upside AND PRR_downside must exceed this
+    min_prr_spread: float = 0.70     # Directional spread: only relevant side must exceed this (stricter)
+    days_before_earnings: int = 2    # Days before earnings to block trades
+    days_after_earnings: int = 1     # Days after earnings to block trades
 
-    # Slippage / credit model
-    credit_received: float = 0.50   # $ per contract on entry
-    max_loss: float = 2.50          # $ per contract on breach
+    # Slippage / credit model (structure-specific)
+    credit_condor: float = 0.65      # $ per contract for iron condor (two sides sold)
+    credit_spread: float = 0.50      # $ per contract for single credit spread
+    wing_width: float = 5.0          # Fixed wing width in $
 
     # Session window (ET)
     session_open_hour: int = 9
@@ -106,14 +109,20 @@ class StrategyParams:
             raise ValueError("rsi_high must be in [0, 100]")
         if self.rsi_low > self.rsi_high:
             raise ValueError("rsi_low must be <= rsi_high")
-        if not (0 <= self.price_range_rank_min <= 1):
-            raise ValueError("price_range_rank_min must be in [0, 1]")
-        if self.blackout_buffer_days < 0:
-            raise ValueError("blackout_buffer_days must be >= 0")
-        if self.credit_received < 0:
-            raise ValueError("credit_received must be >= 0")
-        if self.max_loss < 0:
-            raise ValueError("max_loss must be >= 0")
+        if not (0 <= self.min_prr_condor <= 1):
+            raise ValueError("min_prr_condor must be in [0, 1]")
+        if not (0 <= self.min_prr_spread <= 1):
+            raise ValueError("min_prr_spread must be in [0, 1]")
+        if self.days_before_earnings < 0:
+            raise ValueError("days_before_earnings must be >= 0")
+        if self.days_after_earnings < 0:
+            raise ValueError("days_after_earnings must be >= 0")
+        if self.credit_condor < 0:
+            raise ValueError("credit_condor must be >= 0")
+        if self.credit_spread < 0:
+            raise ValueError("credit_spread must be >= 0")
+        if self.wing_width <= 0:
+            raise ValueError("wing_width must be > 0")
 
 
 # ---------------------------------------------------------------------------
